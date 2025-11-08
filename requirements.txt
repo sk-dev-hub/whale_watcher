@@ -1,0 +1,8 @@
+requests==2.31.0
+python-dotenv==1.0.1
+schedule==1.2.1
+aiohttp==3.9.1
+python-telegram-bot[async]
+ccxt==4.2.95
+pandas==2.2.0
+streamlit==1.32.0

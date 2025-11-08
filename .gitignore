@@ -1,0 +1,24 @@
+
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Данные
+data/
+logs/
+*.csv
+*.log
+
+# IDE
+.vscode/
+.idea/
