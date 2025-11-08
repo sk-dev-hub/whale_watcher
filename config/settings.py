@@ -10,6 +10,10 @@ class Settings:
     CLANKAPP_API_KEY = os.getenv("CLANKAPP_API_KEY") # на будущее
     WHALE_ALERT_KEY = os.getenv("WHALE_ALERT_KEY")  # на будущее
 
+    CRYPTOPANIC_API_KEY = os.getenv("CRYPTOPANIC_API_KEY")
+
+    GROK_API_KEY = os.getenv("GROK_API_KEY")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
     BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
     BINANCE_SECRET = os.getenv("BINANCE_SECRET")

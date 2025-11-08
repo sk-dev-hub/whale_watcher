@@ -6,3 +6,5 @@ python-telegram-bot[async]
 ccxt==4.2.95
 pandas==2.2.0
 streamlit==1.32.0
+feedparser
+openai
