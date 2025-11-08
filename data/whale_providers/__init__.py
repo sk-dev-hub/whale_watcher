@@ -1,36 +1,55 @@
 # data/whale_providers/__init__.py
+"""
+Фабрика для получения данных о китах.
+Пробует провайдеры по очереди: Arkham → ClankApp → Mock.
+Логирование через utils.logger.
+"""
 from typing import List
+from .base import WhaleProvider, WhaleTransaction
 from .arkham import ArkhamProvider
 from .clankapp import ClankAppProvider
 from .mock import MockProvider
-from .base import WhaleProvider, WhaleTransaction
+from utils.logger import get_logger
 
-# Порядок приоритета: Arkham → ClankApp → Mock
+# Логгер с именем модуля
+log = get_logger()
+
+# Порядок приоритета провайдеров
 PROVIDERS = [
     ArkhamProvider,
     ClankAppProvider,
-    MockProvider
+    MockProvider  # Всегда в конце — fallback
 ]
 
+
 def get_provider_chain() -> List[WhaleProvider]:
+    """
+    Возвращает список инстансов провайдеров в порядке приоритета.
+    """
     return [P() for P in PROVIDERS]
 
-def get_whale_transactions(min_usd=1_000_000, limit=3) -> List[WhaleTransaction]:
+
+def get_whale_transactions(min_usd: float = 1_000_000, limit: int = 3) -> List[WhaleTransaction]:
     """
-    Пробует провайдеры по очереди, возвращает первые валидные данные
+    Пробует получить крупные транзакции от доступных провайдеров.
+    Возвращает первые валидные данные или пустой список.
     """
     chain = get_provider_chain()
     available = [p for p in chain if p.is_available()]
+
+    if not available:
+        log.warning("Все провайдеры недоступны")
+        return []
 
     for provider in available:
         try:
             txs = provider.get_large_transfers(min_usd, limit)
             if txs:
-                print(f"Данные от: {provider.__class__.__name__}")
+                log.info(f"Данные получены от: {provider.__class__.__name__}")
                 return txs
         except Exception as e:
-            print(f"{provider.__class__.__name__} упал: {e}")
+            log.warning(f"Провайдер {provider.__class__.__name__} упал: {e}", exc_info=True)
             continue
 
-    print("Все провайдеры недоступны → возврат пустого списка")
+    log.warning("Все провайдеры вернули пустые данные")
     return []
