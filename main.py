@@ -2,18 +2,20 @@
 import asyncio
 import schedule
 import time
-from data.whale_tracker import get_whale_alert
-from core.analyzer import analyze_whale
 from core.decision_engine import make_decision
 from exchanges.mock import MockExchange
+from data.whale_tracker import get_whale_transactions
+from core.analyzer import analyze_whale
 
 exchange = MockExchange()
 
 
 async def check_whales():
     print("\nПроверка китов...")
-    txs = get_whale_alert()
+    txs = get_whale_transactions(min_usd=1_000_000, limit=1)
+
     if not txs:
+        print("Нет данных от провайдеров.")
         return
 
     tx = txs[0]

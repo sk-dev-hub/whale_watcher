@@ -6,7 +6,11 @@ load_dotenv()
 
 
 class Settings:
-    WHALE_ALERT_KEY = os.getenv("WHALE_ALERT_KEY")
+    ARKHAM_API_KEY = os.getenv("ARKHAM_API_KEY")
+    CLANKAPP_API_KEY = os.getenv("CLANKAPP_API_KEY") # на будущее
+    WHALE_ALERT_KEY = os.getenv("WHALE_ALERT_KEY")  # на будущее
+
+
     BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
     BINANCE_SECRET = os.getenv("BINANCE_SECRET")
 
