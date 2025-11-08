@@ -2,7 +2,6 @@
 import asyncio
 import schedule
 import time
-import logging
 
 from utils.logger import get_logger
 from data.whale_tracker import get_whale_transactions
@@ -11,6 +10,7 @@ from core.analyzer import analyze_whale
 from core.news_analyzer import analyze_news_sentiment
 from core.decision_engine import make_final_decision
 from exchanges.mock import MockExchange
+from utils.telegram import notifier
 
 log = get_logger()
 
@@ -48,7 +48,20 @@ async def check_market():
     final_action = make_final_decision(whale_signal, news_analysis)
     log.info(f"\nФИНАЛЬНОЕ РЕШЕНИЕ: {final_action}")
 
-    # 4. ТОРГОВЛЯ
+    # 4. === ОТПРАВКА В TELEGRAM ===
+    signal_data = {
+        "action": final_action,
+        "confidence": max(whale_signal["confidence"], news_analysis["confidence"]),
+        "reason": whale_signal.get("reason", "Комбинированный сигнал")
+    }
+
+    await notifier.send_signal(
+        signal=signal_data,
+        whale_tx=whale_txs[0] if whale_txs else None,
+        news_analysis=news_analysis
+    )
+
+    # 5. ТОРГОВЛЯ
     if "STRONG" in final_action:
         side = "BUY" if "BUY" in final_action else "SELL"
         amount_btc = 0.01
