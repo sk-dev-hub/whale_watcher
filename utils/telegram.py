@@ -45,27 +45,26 @@ class TelegramNotifier:
             log.error(f"Неизвестная ошибка при отправке в Telegram: {e}", exc_info=True)
             return False
 
-    async def send_signal(self, signal: dict, whale_tx=None, news_analysis=None):
-        """
-        Формирует и отправляет торговый сигнал.
-        """
-        emoji = "BUY" if "BUY" in signal["action"] else "SELL" if "SELL" in signal["action"] else "NEUTRAL"
-        strength = "STRONG" if "STRONG" in signal["action"] else "Слабый"
+    async def send_signal(self, signal, whale_tx=None, news_analysis=None):
+        action = signal["action"]
+        emoji = "BUY" if "BUY" in action else "SELL" if "SELL" in action else "HOLD"
+        strength = "STRONG" if "STRONG" in action else ""
 
         lines = [
-            f"<b>{emoji} {strength} СИГНАЛ: {signal['action']}</b>",
-            f"<b>Уверенность:</b> {signal.get('confidence', 0):.1%}",
+            f"<b>{emoji} {strength} {action}</b>",
+            f"<b>Уверенность:</b> {signal['confidence']:.1%}",
             "",
-            "<b>КИТЫ:</b>",
-            f"• {whale_tx.amount} {whale_tx.symbol} → {whale_tx.to_owner} ({whale_tx.to_type})" if whale_tx else "• Нет активности",
-            "",
-            "<b>НОВОСТИ:</b>",
-            f"• {news_analysis['sentiment']} ({news_analysis['confidence']:.0%}) — {news_analysis['source']}" if news_analysis else "• Нет данных",
-            "",
-            f"<i>{signal['reason']}</i>",
-            "",
-            f"⏰ {asyncio.get_event_loop().time():.0f}"
         ]
+
+        if whale_tx:
+            lines += [f"<b>Кит:</b> {whale_tx.amount:.0f} {whale_tx.symbol} → {whale_tx.to_owner}"]
+        if news_analysis and news_analysis['confidence'] > 0.3:
+            lines += [f"<b>Новости:</b> {news_analysis['sentiment']} ({news_analysis['confidence']:.0%})"]
+
+        if "order_id" in signal:
+            lines += [f"<b>Ордер:</b> {signal['order_id']}"]
+
+        lines += ["", f"<i>{signal['reason']}</i>"]
 
         message = "\n".join(lines)
         await self.send_message(message)

@@ -6,6 +6,13 @@ load_dotenv()
 
 
 class Settings:
+    # === РЕЖИМ ===
+    MODE = os.getenv("MODE", "TRADING").upper()
+
+    # === ФЛАГИ ===
+    ENABLE_TRADING = os.getenv("ENABLE_TRADING", "true").lower() == "true"
+    ENABLE_BACKTEST = os.getenv("ENABLE_BACKTEST", "false").lower() == "true"
+
     # === TELEGRAM ===
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # @BotFather
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # Твой ID или канал

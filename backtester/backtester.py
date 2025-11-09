@@ -9,7 +9,7 @@ log = get_logger()
 
 
 class Backtester:
-    def __init__(self, symbol='BTC/USDT', timeframe='1h', days=30):
+    def __init__(self, symbol='BTC/USDT', timeframe='1h', days=60):
         self.symbol = symbol
         self.timeframe = timeframe
         self.days = days
