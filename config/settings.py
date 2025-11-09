@@ -17,6 +17,12 @@ class Settings:
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # @BotFather
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # Твой ID или канал
 
+    # === БЭКТЕСТ ===
+    BACKTEST_MAX_SIZE_MB = float(os.getenv("BACKTEST_MAX_SIZE_MB", "100"))
+    BACKTEST_MAX_FILES = int(os.getenv("BACKTEST_MAX_FILES", "20"))
+    BACKTEST_MAX_AGE_DAYS = int(os.getenv("BACKTEST_MAX_AGE_DAYS", "30"))
+    BACKTEST_KEEP_PROFIT_ABOVE = float(os.getenv("BACKTEST_KEEP_PROFIT_ABOVE", "5.0"))
+
     ARKHAM_API_KEY = os.getenv("ARKHAM_API_KEY")
     CLANKAPP_API_KEY = os.getenv("CLANKAPP_API_KEY") # на будущее
     WHALE_ALERT_KEY = os.getenv("WHALE_ALERT_KEY")  # на будущее

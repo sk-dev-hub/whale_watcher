@@ -2,13 +2,17 @@
 import os
 import glob
 from pathlib import Path
+from typing import List, Tuple
 import ccxt
 import pandas as pd
 import matplotlib.pyplot as plt
+from config.settings import Settings
 from datetime import datetime, timedelta
 from utils.logger import get_logger
 
 log = get_logger()
+
+
 
 # === УНИВЕРСАЛЬНЫЙ ПУТЬ К ПАПКЕ backtests ===
 BASE_DIR = Path(__file__).resolve().parent.parent  # whale_watcher/
@@ -109,11 +113,70 @@ class Backtester:
 
         log.info(f"График сохранён: {filename}")
 
-        # Оставить только 10 последних
-        files = sorted(BACKTEST_DIR.glob("*.png"), key=os.path.getmtime)
-        for old in files[:-10]:
-            old.unlink()
-            log.info(f"Удалён старый график: {old.name}")
+        # УМНАЯ ОЧИСТКА
+        Backtester.cleanup_backtests()
+
+    @staticmethod
+    def cleanup_backtests():
+        """
+        Умная очистка с настройками из .env
+        """
+        if not BACKTEST_DIR.exists():
+            return
+
+        files: List[Tuple[Path, float, float, datetime]] = []
+        total_size_mb = 0
+
+        for file_path in BACKTEST_DIR.glob("backtest_*.png"):
+            try:
+                name = file_path.stem
+                profit_str = name.split("_profit_")[-1].replace(",", ".")
+                profit = float(profit_str.rstrip("%"))
+                size_mb = file_path.stat().st_size / (1024 * 1024)
+                mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
+                files.append((file_path, profit, size_mb, mtime))
+                total_size_mb += size_mb
+            except Exception as e:
+                log.warning(f"Пропущен файл {file_path.name}: {e}")
+                continue
+
+        if not files:
+            return
+
+        log.info(f"Очистка backtests: {len(files)} файлов, {total_size_mb:.1f} МБ")
+
+        files.sort(key=lambda x: (-x[1], x[3]), reverse=True)
+
+        max_size = Settings.BACKTEST_MAX_SIZE_MB
+        max_files = Settings.BACKTEST_MAX_FILES
+        max_age = Settings.BACKTEST_MAX_AGE_DAYS
+        keep_profit = Settings.BACKTEST_KEEP_PROFIT_ABOVE
+
+        to_keep = []
+        current_size = 0
+        current_count = 0
+
+        for file_path, profit, size_mb, mtime in files:
+            age_days = (datetime.now() - mtime).days
+
+            if profit >= keep_profit or age_days <= 7:
+                to_keep.append((file_path, size_mb))
+                current_size += size_mb
+                current_count += 1
+                continue
+
+            if (current_count >= max_files or
+                current_size + size_mb > max_size or
+                age_days > max_age):
+                file_path.unlink()
+                log.info(f"Удалён: {file_path.name} (+{profit:.2f}%, {age_days}д)")
+            else:
+                to_keep.append((file_path, size_mb))
+                current_size += size_mb
+                current_count += 1
+
+        final_size = sum(s for _, s in to_keep)
+        log.info(f"Осталось: {len(to_keep)} файлов, {final_size:.1f} МБ")
 
 
 # Запуск бэктеста
