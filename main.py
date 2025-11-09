@@ -1,4 +1,6 @@
 # main.py
+import glob
+import os
 import asyncio
 import schedule
 import time
@@ -38,8 +40,8 @@ elif MODE == "BACKTEST":
     log.info("Запуск бэктеста...")
     bt = Backtester(days=30)
     df = bt.fetch_historical_data()
-    profit, trades = bt.run_backtest(df)
-    bt.plot_results(df, trades)
+    profit_pct, trades = bt.run_backtest(df)
+    bt.plot_results(df, trades, profit_pct)
     log.info("Бэктест завершён. Выход.")
     exit(0)
 

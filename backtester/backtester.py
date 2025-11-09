@@ -1,4 +1,7 @@
 # backtester/backtester.py
+import os
+import glob
+from pathlib import Path
 import ccxt
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,6 +10,10 @@ from utils.logger import get_logger
 
 log = get_logger()
 
+# === УНИВЕРСАЛЬНЫЙ ПУТЬ К ПАПКЕ backtests ===
+BASE_DIR = Path(__file__).resolve().parent.parent  # whale_watcher/
+BACKTEST_DIR = BASE_DIR / "backtester/backtests"
+BACKTEST_DIR.mkdir(exist_ok=True)
 
 class Backtester:
     def __init__(self, symbol='BTC/USDT', timeframe='1h', days=60):
@@ -68,44 +75,50 @@ class Backtester:
         log.info(f"Бэктест завершён: Прибыль {profit_pct:.2f}% ({len(self.trades)} сделок)")
         return profit_pct, self.trades
 
-    def plot_results(self, df, trades):
-        """
-        График цены + сделок.
-        """
-        plt.figure(figsize=(14, 7))
-        plt.plot(df.index, df['close'], label='BTC/USDT', alpha=0.7, color='blue')
+    def plot_results(self, df, trades, profit_pct):
+        from datetime import datetime
 
-        # Разделяем BUY и SELL
+        # Имя файла
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        profit_str = f"{'+' if profit_pct >= 0 else ''}{profit_pct:.2f}".replace(".", ",")
+        filename = BACKTEST_DIR / f"backtest_{timestamp}_profit_{profit_str}%.png"
+
+        # График
+        plt.figure(figsize=(14, 7))
+        plt.plot(df.index, df['close'], label='BTC/USDT', color='blue', alpha=0.7)
+
         buys = [t for t in trades if t['type'] == 'BUY']
         sells = [t for t in trades if t['type'] == 'SELL']
 
-        # BUY точки
         if buys:
-            buy_times = [t['time'] for t in buys]
-            buy_prices = [t['price'] for t in buys]
-            plt.scatter(buy_times, buy_prices, color='green', marker='^', s=120, label='BUY', zorder=5)
-
-        # SELL точки
+            plt.scatter([t['time'] for t in buys], [t['price'] for t in buys],
+                       color='green', marker='^', s=120, label='BUY', zorder=5)
         if sells:
-            sell_times = [t['time'] for t in sells]
-            sell_prices = [t['price'] for t in sells]
-            plt.scatter(sell_times, sell_prices, color='red', marker='v', s=120, label='SELL', zorder=5)
+            plt.scatter([t['time'] for t in sells], [t['price'] for t in sells],
+                       color='red', marker='v', s=120, label='SELL', zorder=5)
 
-        plt.title(f'Бэктест: {self.symbol} | {self.days} дней | Прибыль: {self.balance - self.initial_balance:.2f} USD')
+        plt.title(f'Бэктест BTC/USDT | {self.days} дней | Прибыль: {profit_pct:+.2f}%')
         plt.xlabel('Время')
         plt.ylabel('Цена (USDT)')
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        plt.savefig('backtest_results.png', dpi=150)
-        plt.show()
-        log.info("График сохранён: backtest_results.png")
+        plt.savefig(filename, dpi=150, bbox_inches='tight')
+        plt.close()
+
+        log.info(f"График сохранён: {filename}")
+
+        # Оставить только 10 последних
+        files = sorted(BACKTEST_DIR.glob("*.png"), key=os.path.getmtime)
+        for old in files[:-10]:
+            old.unlink()
+            log.info(f"Удалён старый график: {old.name}")
 
 
 # Запуск бэктеста
 if __name__ == "__main__":
     bt = Backtester()
     df = bt.fetch_historical_data()
-    profit, trades = bt.run_backtest(df)
-    bt.plot_results(df, trades)
+    profit_pct, trades = bt.run_backtest(df)
+    bt.plot_results(df, trades, profit_pct)
