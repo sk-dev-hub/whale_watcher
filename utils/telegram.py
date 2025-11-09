@@ -1,36 +1,31 @@
 # utils/telegram.py
 import asyncio
-import logging
-from typing import Optional
-from telegram import Bot
+from telegram.ext import Application
 from telegram.error import TelegramError
 from config.settings import Settings
 from utils.logger import get_logger
 
 log = get_logger()
 
-
 class TelegramNotifier:
     def __init__(self):
-        self.bot = None
+        self.app = None
         self.chat_id = Settings.TELEGRAM_CHAT_ID
         self.enabled = bool(Settings.TELEGRAM_BOT_TOKEN and self.chat_id)
 
         if self.enabled:
-            self.bot = Bot(token=Settings.TELEGRAM_BOT_TOKEN)
-            log.info("Telegram-бот инициализирован")
+            # Создаём приложение — единственный способ получить Bot в v20+
+            self.app = Application.builder().token(Settings.TELEGRAM_BOT_TOKEN).build()
+            log.info("Telegram: инициализирован (v22.5+)")
 
     async def send_message(self, text: str, parse_mode: str = "HTML") -> bool:
-        """
-        Отправляет сообщение в Telegram.
-        Возвращает True если успешно.
-        """
-        if not self.enabled:
-            log.debug("Telegram отключён в настройках")
+        if not self.enabled or not self.app:
+            log.debug("Telegram отключён")
             return False
 
         try:
-            await self.bot.send_message(
+            # Используем app.bot (Bot доступен только так)
+            await self.app.bot.send_message(
                 chat_id=self.chat_id,
                 text=text,
                 parse_mode=parse_mode,
@@ -42,7 +37,7 @@ class TelegramNotifier:
             log.error(f"Ошибка Telegram: {e}", exc_info=True)
             return False
         except Exception as e:
-            log.error(f"Неизвестная ошибка при отправке в Telegram: {e}", exc_info=True)
+            log.error(f"Неизвестная ошибка: {e}", exc_info=True)
             return False
 
     async def send_signal(self, signal, whale_tx=None, news_analysis=None):
@@ -57,18 +52,17 @@ class TelegramNotifier:
         ]
 
         if whale_tx:
-            lines += [f"<b>Кит:</b> {whale_tx.amount:.0f} {whale_tx.symbol} → {whale_tx.to_owner}"]
+            lines.append(f"<b>Кит:</b> {whale_tx.amount:.0f} {whale_tx.symbol} → {whale_tx.to_owner}")
         if news_analysis and news_analysis['confidence'] > 0.3:
-            lines += [f"<b>Новости:</b> {news_analysis['sentiment']} ({news_analysis['confidence']:.0%})"]
+            lines.append(f"<b>Новости:</b> {news_analysis['sentiment']} ({news_analysis['confidence']:.0%})")
 
         if "order_id" in signal:
-            lines += [f"<b>Ордер:</b> {signal['order_id']}"]
+            lines.append(f"<b>Ордер:</b> {signal['order_id']}")
 
         lines += ["", f"<i>{signal['reason']}</i>"]
 
         message = "\n".join(lines)
         await self.send_message(message)
-
 
 # Глобальный экземпляр
 notifier = TelegramNotifier()
