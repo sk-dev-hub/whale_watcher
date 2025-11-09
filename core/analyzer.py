@@ -1,26 +1,32 @@
 # core/analyzer.py
-def analyze_whale(tx):  # tx — это WhaleTransaction (объект)
-    amount_usd = tx.amount_usd
-    to_type = tx.to_type
-    from_type = tx.from_type
-    to_owner = tx.to_owner.lower()
+from config.settings import Settings
+from data.whale_providers import WhaleTransaction
+from utils.logger import get_logger
 
-    # Arkham-специфика: institution → сильный сигнал
-    if amount_usd > 5_000_000 and to_type == "exchange":
-        confidence = 0.85 if "binance" in to_owner else 0.8
-        return {
-            "signal": "SELL",
-            "confidence": confidence,
-            "reason": f"Институциональный перевод на биржу ({tx.to_owner}) — риск дампа"
-        }
-    if amount_usd > 3_000_000 and from_type == "exchange" and to_type in ["whale", "institution"]:
-        return {
-            "signal": "BUY",
-            "confidence": 0.8,
-            "reason": f"Вывод с биржи к киту ({tx.to_owner}) — накопление"
-        }
+log = get_logger()
+
+def analyze_whale(tx: WhaleTransaction) -> dict:
+    signal = "HOLD"
+    confidence = 0.5
+    reason = "Анализ кита"
+
+    # Пример: только биржи
+    if tx.to_type == "exchange":
+        signal = "SELL"
+        confidence = 0.85
+        reason = f"Перевод на биржу {tx.to_owner} — риск дампа"
+    elif tx.from_type == "exchange":
+        signal = "BUY"
+        confidence = 0.80
+        reason = f"Вывод с биржи {tx.from_owner} — накопление"
+
+    # Доп. фильтр: игнорировать мелкие
+    if tx.usd_value < Settings.WHALE_MIN_USD * 1.5:
+        confidence *= 0.7
+        reason += " (сумма ниже порога)"
+
     return {
-        "signal": "HOLD",
-        "confidence": 0.5,
-        "reason": "Нейтрально"
+        "signal": signal,
+        "confidence": round(confidence, 2),
+        "reason": reason
     }

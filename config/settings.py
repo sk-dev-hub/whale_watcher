@@ -17,6 +17,11 @@ class Settings:
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # @BotFather
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # Твой ID или канал
 
+    # === ФИЛЬТРЫ КИТОВ ===
+    WHALE_SYMBOLS = [s.strip() for s in os.getenv("WHALE_SYMBOLS", "BTC").split(",")]
+    WHALE_MIN_USD = float(os.getenv("WHALE_MIN_USD", "1000000"))
+    WHALE_IGNORE_UNKNOWN = os.getenv("WHALE_IGNORE_UNKNOWN", "true").lower() == "true"
+
     # === БЭКТЕСТ ===
     BACKTEST_MAX_SIZE_MB = float(os.getenv("BACKTEST_MAX_SIZE_MB", "100"))
     BACKTEST_MAX_FILES = int(os.getenv("BACKTEST_MAX_FILES", "20"))

@@ -1,22 +1,24 @@
 # backtester/backtester.py
-import os
-import glob
+import sys
 from pathlib import Path
-from typing import List, Tuple
+
+# === ДОБАВЛЯЕМ КОРЕНЬ ПРОЕКТА ===
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
+
 import ccxt
 import pandas as pd
 import matplotlib.pyplot as plt
-from config.settings import Settings
 from datetime import datetime, timedelta
+from typing import List, Tuple
+from config.settings import Settings
 from utils.logger import get_logger
 
 log = get_logger()
 
 
-
 # === УНИВЕРСАЛЬНЫЙ ПУТЬ К ПАПКЕ backtests ===
-BASE_DIR = Path(__file__).resolve().parent.parent  # whale_watcher/
-BACKTEST_DIR = BASE_DIR / "backtester/backtests"
+BACKTEST_DIR = BASE_DIR / "backtester"
 BACKTEST_DIR.mkdir(exist_ok=True)
 
 class Backtester:
